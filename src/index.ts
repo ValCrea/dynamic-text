@@ -62,26 +62,27 @@ export class FunText {
   }
 
   static #nodeBuilder(split: string | null, content: string) {
-    const isNewLine = split === "\n";
-    const texts = split !== null ? content.split(split) : [content];
+    const isSPlitNew = split === "\n";
+    const isSplitNull = split === null;
+    const texts = isSplitNull ? [content] : content.split(split);
 
     let nodes: HTMLElement[] = [];
     texts.forEach((text, index) => {
-      if (isNewLine) {
+      if (isSPlitNew || isSplitNull) {
         nodes.push(FunText.#elementBuilder("p", text));
       } else {
         nodes = [...nodes, ...FunText.#nodeBuilder("\n", text)];
       }
 
       if (split && index < texts.length - 1) {
-        nodes.push(FunText.#elementBuilder(isNewLine ? "br" : "p", split));
+        nodes.push(FunText.#elementBuilder(isSPlitNew ? "br" : "p", split));
       }
     });
 
     return nodes;
   }
 
-  static #typeCompress(variable: any, def: string, sfix: string = "") {
+  static #typeCompressor(variable: any, def: string, sfix: string = "") {
     return !variable
       ? def
       : typeof variable === "string"
@@ -90,7 +91,7 @@ export class FunText {
   }
 
   static #animationCompiler(animation: Animation): CompiledAnimation {
-    const type = animation.type; // `${animation.type}`
+    const type = animation.type;
 
     const steps: { [key: number]: string } = {};
     if (typeof animation.steps === "string") {
@@ -105,9 +106,9 @@ export class FunText {
       }
     }
 
-    const duration = FunText.#typeCompress(animation.duration, "1s", "s");
-    const delay = FunText.#typeCompress(animation.delay, "0s", "s");
-    const iteration = FunText.#typeCompress(animation.iteration, "1");
+    const duration = FunText.#typeCompressor(animation.duration, "1s", "s");
+    const delay = FunText.#typeCompressor(animation.delay, "0s", "s");
+    const iteration = FunText.#typeCompressor(animation.iteration, "1");
 
     const direction = animation.direction || "normal";
     const timing = animation.timing || "ease-in-out";
@@ -234,6 +235,7 @@ export class FunText {
         this.#shadow = shadow;
       }
     }
+    this.#shadow.appendChild(document.createElement("slot"));
   }
 
   constructor(options: Options, animations: Animation[]) {
