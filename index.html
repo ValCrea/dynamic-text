@@ -25,23 +25,99 @@
     </pre>
 
     <script defer>
-      const container = document.getElementById("container");
       const options = {
-        text: "",
-        scope: "all",
-        container: container,
+        text: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Totam, repellat.\n Facere possimus perspiciatis minima nulla voluptatibus eos, quae cum ullam debitis reiciendis\n ipsa deserunt rem perferendis, a et, aliquid sed.",
+        scope: "sentence",
+        container: null,
       };
       const animations = [
         {
+          type: "color",
+          steps: ["red", "blue"],
+          iteration: "infinite",
+          duration: 2,
+          direction: "alternate",
+          offset: 0.1,
+          delay: -6,
+        },
+        {
+          type: "background",
+          steps: ["green", "yellow"],
+          iteration: "infinite",
+          duration: 2,
+          direction: "alternate",
+          offset: 0.1,
+          delay: -6,
+        },
+        {
           type: "horizontal",
+          steps: ["1rem", "15rem"],
+          iteration: "infinite",
+          duration: 3,
+          direction: "alternate",
+          offset: 0.01,
+          delay: -6,
+        },
+        {
+          type: "vertical",
+          steps: { 0: "3rem", 50: "0rem", 100: "-3rem" },
+          iteration: "infinite",
+          duration: 3,
+          direction: "alternate",
+          offset: 0.02,
+          delay: -6,
         },
       ];
 
-      const ft1 = new FunText(options, animations).mount();
-      ft1.unmount();
+      /*const texts = [];
+      const runs = 10000;
+      console.log("Iterations: " + runs);
 
-      options.text = "Goodye world";
-      const ft2 = new FunText(options, animations).mount();
+      console.time("Containers");
+      const containers = [];
+      for (let i = 0; i < runs; i++) {
+        containers.push(document.createElement("div"));
+      }
+      console.timeEnd("Containers");
+
+      console.time("Init");
+      for (const con of containers) {
+        options.container = con;
+        texts.push(new FunText(options, animations));
+      }
+      console.timeEnd("Init");
+
+      console.time("Build");
+      for (const text of texts) {
+        text.build();
+      }
+      console.timeEnd("Build");
+
+      console.time("Mount");
+      for (const text of texts) {
+        text.mount();
+      }
+      console.timeEnd("Mount");
+
+      console.time("Unmount");
+      for (const text of texts) {
+        text.unmount();
+      }
+      console.timeEnd("Unmount");*/
+
+      options.container = document.getElementById("container");
+
+      console.time("Init");
+      const funtext = new FunText(options, animations);
+      console.timeEnd("Init");
+
+      console.time("Build");
+      funtext.build();
+      console.timeEnd("Build");
+
+      console.time("Mount");
+      funtext.mount();
+      console.timeEnd("Mount");
     </script>
 
     <style>

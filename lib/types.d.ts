@@ -1,5 +1,9 @@
 export declare type Scope = "all" | "sentence" | "word" | "letter";
 export declare type AnimationType = "horizontal" | "vertical" | "color" | "background" | "opacity";
+export declare type Sync = {
+    time: number;
+    to: "start" | "end";
+};
 export declare type Options = {
     text?: string;
     scope: Scope;
@@ -12,21 +16,23 @@ export declare type Animation = {
     };
     duration?: number | `${number}s` | `${number}ms`;
     delay?: number | `${number}s` | `${number}ms`;
-    iteration?: number | `${number}s` | `${number}ms` | "infinite";
+    iteration?: number | string | "infinite";
     direction?: "normal" | "reverse" | "alternate" | "alternate-reverse";
     timing?: "ease" | "ease-in" | "ease-out" | "ease-in-out" | "linear" | "step-start" | "step-end";
     fill?: "none" | "forwards" | "backwards" | "both" | "initial" | "inherit";
     offset?: number;
-    sync?: "none" | "start" | "end";
+    sync?: Sync;
 };
 export declare type CompiledAnimation = {
-    type: string;
+    type: AnimationType;
     steps: {
-        [key: number]: string;
+        [key: string]: string;
     };
     duration: string;
     delay: string;
     iteration: string;
     direction: string;
     timing: string;
+    fill: string;
+    offset: number;
 };

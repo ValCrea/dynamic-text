@@ -1,8 +1,10 @@
-import type { Scope, Options, Animation, CompiledAnimation } from "types";
-
-function quoteString(str: any | string) {
-  return typeof str === "string" ? `"${str}"` : str;
-}
+import type {
+  Scope,
+  Options,
+  Animation,
+  CompiledAnimation,
+  AnimationType,
+} from "types";
 
 export class FunText {
   static #splitScope: { [key in Scope]: string | null } = {
@@ -12,8 +14,34 @@ export class FunText {
     letter: "",
   };
 
-  static #defaultCss =
-    "position: relative;display:inline-block;margin:0;padding:0;white-space:pre;";
+  static #animateProperty: { [key in AnimationType]: string } = {
+    horizontal: "left",
+    vertical: "top",
+    color: "color",
+    background: "background-color",
+    opacity: "opacity",
+  };
+
+  static #defaultCss = `
+    position:relative;
+    left:0;
+    top:0;
+    display:inline-block;
+    margin:0;
+    padding:0;
+    white-space:pre;
+    background-size: 100px;
+  `;
+
+  static #defaultVariables = `
+    :host {
+      --offset-horizontal: 0;
+      --offset-vertical: 0;
+      --offset-color: 0;
+      --offset-background: 0;
+      --offset-opacity: 0;
+    }
+  `;
 
   /*#calculateOffset(currentCount, totalCount, currentLen, totalLen) {}
   #syncAnimations() {}*/
@@ -35,7 +63,7 @@ export class FunText {
 
   static #nodeBuilder(split: string | null, content: string) {
     const isNewLine = split === "\n";
-    const texts = split ? content.split(split) : [content];
+    const texts = split !== null ? content.split(split) : [content];
 
     let nodes: HTMLElement[] = [];
     texts.forEach((text, index) => {
@@ -53,7 +81,7 @@ export class FunText {
     return nodes;
   }
 
-  static typeCompress(variable: any, def: string, sfix: string = "") {
+  static #typeCompress(variable: any, def: string, sfix: string = "") {
     return !variable
       ? def
       : typeof variable === "string"
@@ -65,7 +93,7 @@ export class FunText {
     const type = animation.type; // `${animation.type}`
 
     const steps: { [key: number]: string } = {};
-    if (typeof animation.steps == "string") {
+    if (typeof animation.steps === "string") {
       steps[100] = animation.steps;
     } else if (animation.steps instanceof Array) {
       steps[0] = animation.steps[0];
@@ -77,13 +105,15 @@ export class FunText {
       }
     }
 
-    const duration = FunText.typeCompress(animation.duration, "1s", "s");
-    const delay = FunText.typeCompress(animation.delay, "0s", "s");
-    const iteration = FunText.typeCompress(animation.iteration, "1");
+    const duration = FunText.#typeCompress(animation.duration, "1s", "s");
+    const delay = FunText.#typeCompress(animation.delay, "0s", "s");
+    const iteration = FunText.#typeCompress(animation.iteration, "1");
 
-    const direction = animation.direction ? animation.direction : "normal";
-    const timing = animation.timing ? animation.timing : "ease";
-    const fill = animation.fill ? animation.fill : "none";
+    const direction = animation.direction || "normal";
+    const timing = animation.timing || "ease-in-out";
+    const fill = animation.fill || "none";
+
+    const offset = animation.offset || 0;
 
     return {
       type,
@@ -94,48 +124,62 @@ export class FunText {
       direction,
       timing,
       fill,
+      offset,
     };
   }
 
-  /*static #animationsCompiler(animations: Animation[]): CompiledAnimation[] {
-    return [{ type: animations[0].type }, { type: animations[1].type }];
-  }*/
+  static #animationBuilder(animations: CompiledAnimation[]) {
+    const name = animations.map((an) => an.type).join(",");
+    const duration = animations.map((an) => an.duration).join(",");
+    const iteration = animations.map((an) => an.iteration).join(",");
+    const direction = animations.map((an) => an.direction).join(",");
+    const timing = animations.map((an) => an.timing).join(",");
+    const fill = animations.map((an) => an.fill).join(",");
 
-  static #animationBuilder(animation: CompiledAnimation) {
-    return `
-      @keyframes ${animation.type} {
-        from {
-          color: red;
-        }
-        to {
-          color: blue;
-        }
-      }
-    `;
+    const delay = animations
+      .map((an) => `calc(${an.delay} + var(--offset-${an.type}))`)
+      .join(",");
+
+    return [
+      `animation-name: ${name};`,
+      `animation-duration: ${duration};`,
+      `animation-delay: ${delay};`,
+      `animation-iteration-count: ${iteration};`,
+      `animation-direction: ${direction};`,
+      `animation-timing-function: ${timing};`,
+      `animation-fill-mode: ${fill};`,
+    ].join("\n");
   }
 
-  static #animationsBuilder(animation: CompiledAnimation) {
+  static #keyframeBuilder(animation: CompiledAnimation) {
+    const property = FunText.#animateProperty[animation.type];
+    let keyframes = "";
+    for (const key of Object.keys(animation.steps)) {
+      keyframes = `${keyframes} ${key}% { ${property}:${animation.steps[key]}; }`;
+    }
+
     return `
       @keyframes ${animation.type} {
-        from {
-          color: red;
-        }
-        to {
-          color: blue;
-        }
+        ${keyframes}
       }
     `;
   }
 
   #scope: Scope;
   #container: HTMLElement;
-  #shadow!: ShadowRoot;
   #text: string;
 
-  #nodes: HTMLElement[];
+  #animations!: CompiledAnimation[];
+  #nodes!: HTMLElement[];
   #style!: HTMLStyleElement;
+  #shadow!: ShadowRoot;
 
-  #animations: Animation[];
+  #compileAnimations(animations: Animation[]) {
+    this.#animations = [];
+    for (const animation of animations) {
+      this.#animations.push(FunText.#animationCompiler(animation));
+    }
+  }
 
   #buildNodes() {
     this.#nodes = FunText.#nodeBuilder(
@@ -145,16 +189,33 @@ export class FunText {
   }
 
   #buildStyle() {
-    //const keyframes = FunText.#animationBuilder(this.#animations[0]);
-    const keyframes = "";
+    let keyframes = "";
+    for (const animation of this.#animations) {
+      keyframes = `${keyframes}${FunText.#keyframeBuilder(animation)}`;
+
+      let curNode = null;
+      const animationName = `--offset-${animation.type}`;
+
+      let curLen = 0;
+      const maxLen = this.#text.length;
+      const maxInd = this.#nodes.length;
+      for (let curInd = 0; curInd < maxInd; curInd++) {
+        curNode = this.#nodes[curInd];
+        curNode.style.setProperty(
+          animationName,
+          `${curInd * animation.offset}s`
+        );
+        curLen += curNode.innerText.length;
+      }
+    }
 
     this.#style = document.createElement("style");
     this.#style.innerHTML = `
-    ${keyframes}
     .funtext {
       ${FunText.#defaultCss}
-      animation: ${"aa"} 5s infinite alternate;
+      ${FunText.#animationBuilder(this.#animations)}
     }
+    ${keyframes}
     `;
   }
 
@@ -179,13 +240,15 @@ export class FunText {
     this.#scope = options.scope;
     this.#container = options.container;
     this.#text = options.text || this.#container.innerText;
+    this.#compileAnimations(animations);
+  }
 
-    this.#nodes = [];
-    this.#animations = animations;
-
+  build() {
     this.#buildNodes();
     this.#buildStyle();
     this.#buildShadow();
+
+    return this;
   }
 
   mount() {
@@ -205,11 +268,11 @@ export class FunText {
     return this;
   }
 
-  pause() {}
+  pause() {} // TODO
 
-  unpause() {}
+  unpause() {} // TODO
 
-  toggle() {}
+  toggle() {} // TODO
 
-  restart() {}
+  restart() {} // TODO
 }

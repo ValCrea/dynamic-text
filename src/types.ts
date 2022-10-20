@@ -1,10 +1,16 @@
 export type Scope = "all" | "sentence" | "word" | "letter"; // "custom"
+
 export type AnimationType =
   | "horizontal"
   | "vertical"
   | "color"
   | "background"
   | "opacity";
+
+export type Sync = {
+  time: number;
+  to: "start" | "end"; // TODO middle
+};
 
 export type Options = {
   text?: string;
@@ -31,18 +37,18 @@ export type Animation = {
   // `custom:${string}`
   fill?: "none" | "forwards" | "backwards" | "both" | "initial" | "inherit";
 
-  offset?: number;
+  offset?: number; // TODO
   /*| ((
         curInd: number,
         maxInd: number,
         curLen: number,
         maxLen: number
       ) => number);*/
-  sync?: "none" | "start" | "end";
+  sync?: Sync; // TODO
 };
 
 export type CompiledAnimation = {
-  type: string;
+  type: AnimationType;
   steps: { [key: string]: string };
   duration: string;
   delay: string;
@@ -50,4 +56,5 @@ export type CompiledAnimation = {
   direction: string;
   timing: string;
   fill: string;
+  offset: number;
 };
