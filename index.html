@@ -6,8 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DynamicText</title>
 
-    <link rel="stylesheet" href="style.css" />
-    <script src="script.js"></script>
+    <script>
+      var exports = {};
+    </script>
+    <script src="/lib/index.js"></script>
     <link rel="icon" href="data:;base64,=" />
   </head>
   <body>
@@ -35,7 +37,18 @@
         },
       ];
 
-      const ft = new FunText(options, animations).build().mount();
+      const ft1 = new FunText(options, animations).mount();
+      ft1.unmount();
+
+      options.text = "Goodye world";
+      const ft2 = new FunText(options, animations).mount();
     </script>
+
+    <style>
+      body {
+        margin: 0;
+        padding: 5rem;
+      }
+    </style>
   </body>
 </html>

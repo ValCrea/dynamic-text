@@ -1,0 +1,10 @@
+{
+  "name": "dynamic-text",
+  "version": "1.0.0",
+  "dependencies": {
+    "typescript": "^4.8.4"
+  },
+  "scripts": {
+    "build": "tsc"
+  }
+}
