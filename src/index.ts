@@ -38,6 +38,7 @@ export default class FunText {
 
   static #warning(...args: any[]) {
     console.warn("FunTextWarning:", ...args);
+    // TODO performace warning (to many nodes)
   }
 
   static #error(...args: any[]): never {
@@ -531,7 +532,7 @@ export default class FunText {
   }
 
   /*
-    UNMOUNT  
+    DETACH
   */
 
   detach() {} // TODO
