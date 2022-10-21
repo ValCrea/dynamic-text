@@ -8,51 +8,31 @@ import type {
   AnimationType,
 } from "types";
 
+/*
+  UTILITIES
+*/
+
+// Generates object keys and numbers instead of strings
 function* numberKeys(object: { [key: number]: any }) {
   const keys = Object.keys(object);
   for (const k of keys) yield parseFloat(k);
 }
 
-export class FunText {
-  static #splitScope: { [key in Scope]: string | null } = {
-    all: null,
-    sentence: "\n",
-    word: " ",
-    letter: "",
-  };
-
-  static #animateProperty: { [key in AnimationType]: string } = {
-    horizontal: "left",
-    vertical: "top",
-    color: "color",
-    background: "background-color",
-    opacity: "opacity",
-    scale: "scale",
-    rotation: "rotate",
-  };
-
-  static #defaultCss = `
-    position:relative;
-    left:0;
-    top:0;
-    display:inline-block;
-    margin:0;
-    padding:0;
-    white-space:pre;
-    background-size: 100px;
-  `;
-
-  static #timeUnitConversion: { [key: string]: number } = {
-    ms: 0.001,
-  };
-
-  static #animationSyncBegin: { [key in Sync["to"]]: number } = {
-    start: 0,
-    end: 100,
-  };
+/*
+  |‾‾‾  |   |  |\  |    ‾‾|‾‾  |‾‾‾  \  /  ‾‾|‾‾
+  |‾‾   |   |  | \ |      |    |—     \\     |
+  |     |___|  |  \|      |    |___  /  \    |
+*/
+export default class FunText {
+  /*static #animationProperties = ["name", "duration", "delay", "iteration"]
+  static #animationFunctionNames = ["name", "duration", "delay", "iteration-count", "direction", "timing-function", "fill-mode"];*/
 
   /*#calculateOffset(currentCount, totalCount, currentLen, totalLen) {}
   #syncAnimations() {}*/
+
+  /*
+    WARNINGS AND ERRORS
+  */
 
   static #warning(...args: any[]) {
     console.warn("FunTextWarning:", ...args);
@@ -62,33 +42,21 @@ export class FunText {
     throw Error("FunTextError: " + [...args].join(" "));
   }
 
-  static #elementBuilder(type: string, content: string) {
-    const element = document.createElement(type);
-    element.innerText = content;
-    element.classList.add("funtext");
-    return element;
-  }
+  /*
+    INPUT ANIMATION
+  */
 
-  static #nodeBuilder(split: string | null, content: string) {
-    const isSPlitNew = split === "\n";
-    const isSplitNull = split === null;
-    const texts = isSplitNull ? [content] : content.split(split);
+  // Time unit to second conversion
+  static #animationTimeConvert: { [key: string]: number } = {
+    s: 1,
+    ms: 0.001,
+  };
 
-    let nodes: HTMLElement[] = [];
-    texts.forEach((text, index) => {
-      if (isSPlitNew || isSplitNull) {
-        nodes.push(FunText.#elementBuilder("p", text));
-      } else {
-        nodes = [...nodes, ...FunText.#nodeBuilder("\n", text)];
-      }
-
-      if (split && index < texts.length - 1) {
-        nodes.push(FunText.#elementBuilder(isSPlitNew ? "br" : "p", split));
-      }
-    });
-
-    return nodes;
-  }
+  // Sync keyword to percentage
+  static #animationSyncTo: { [key in Sync["to"]]: number } = {
+    start: 0,
+    end: 100,
+  };
 
   static #typeCompressor(variable: any, def: string, sfix: string = "") {
     return !variable
@@ -98,6 +66,7 @@ export class FunText {
       : `${variable}${sfix}`;
   }
 
+  // Converts input animation into a more program firendly format
   static #animationCompiler(animation: Animation): CompiledAnimation {
     const type = animation.type;
 
@@ -135,16 +104,17 @@ export class FunText {
       offset,
     };
 
+    // TODO: clean code
     if (animation.sync) {
       const durationUnit = duration.replace(/[0-9]/g, "");
       let durationValue = parseFloat(duration.replace(/\W/g, ""));
       durationValue = isNaN(durationValue) ? 0 : durationValue;
 
       durationValue *=
-        FunText.#timeUnitConversion[durationUnit.toLowerCase()] || 1;
+        FunText.#animationTimeConvert[durationUnit.toLowerCase()] || 1;
 
       const ratio = durationValue / animation.sync.time;
-      const move = FunText.#animationSyncBegin[animation.sync.to] * (1 - ratio);
+      const move = FunText.#animationSyncTo[animation.sync.to] * (1 - ratio);
 
       const syncedSteps: Steps = {};
       for (const key of numberKeys(compiled.steps)) {
@@ -170,7 +140,118 @@ export class FunText {
     return compiled;
   }
 
+  // Converts and sets all input animations
+  #compileAnimations(animations: Animation[]) {
+    this.#animations = [];
+    for (const animation of animations) {
+      this.#animations.push(FunText.#animationCompiler(animation));
+    }
+  }
+
+  /*
+    DOM NODES
+  */
+
+  // Ways to split text depending on the scope
+  static #scopeSplit: { [key in Scope]: string | null } = {
+    all: null,
+    sentence: "\n",
+    word: " ",
+    letter: "",
+  };
+
+  // Creates a dom element with default styling
+  static #elementBuilder(type: string, content: string) {
+    const element = document.createElement(type);
+    element.innerText = content;
+    element.classList.add("funtext");
+    return element;
+  }
+
+  // Splits input text into nodes dependin on the scope
+  static #nodeBuilder(split: string | null, content: string) {
+    const isSPlitNew = split === "\n";
+    const isSplitNull = split === null;
+    const texts = isSplitNull ? [content] : content.split(split);
+
+    let nodes: HTMLElement[] = [];
+    texts.forEach((text, index) => {
+      if (isSPlitNew || isSplitNull) {
+        nodes.push(FunText.#elementBuilder("p", text));
+      } else {
+        nodes = [...nodes, ...FunText.#nodeBuilder("\n", text)];
+      }
+
+      if (split && index < texts.length - 1) {
+        nodes.push(FunText.#elementBuilder(isSPlitNew ? "br" : "p", split));
+      }
+    });
+
+    return nodes;
+  }
+
+  // Builds and sets nodes
+  #buildNodes() {
+    this.#nodes = FunText.#nodeBuilder(
+      FunText.#scopeSplit[this.#scope],
+      this.#text
+    );
+  }
+
+  /*
+    STYLE
+  */
+
+  // Properties that animation types target
+  static #animationTarget: { [key in AnimationType]: string } = {
+    horizontal: "left",
+    vertical: "top",
+    color: "color",
+    background: "background-color",
+    opacity: "opacity",
+    scale: "scale",
+    rotation: "rotate",
+  };
+
+  // Default css for new nodes
+  static #styleDefault = `
+    position:relative;
+    left:0;
+    top:0;
+    display:inline-block;
+    margin:0;
+    padding:0;
+    white-space:pre;
+    background-size: 100px;
+  `;
+
+  // Builds keyframes for given animation
+  static #keyframeBuilder(animation: CompiledAnimation) {
+    const property = FunText.#animationTarget[animation.type];
+    let keyframes = "";
+    for (const key of numberKeys(animation.steps)) {
+      let properties = "";
+      let step = animation.steps[key];
+      if (typeof step === "string") {
+        step = [step];
+      }
+
+      for (const s of step) {
+        properties = `${properties}${property}:${s};`;
+      }
+      keyframes = `${keyframes} ${key}% { ${properties} }`;
+    }
+
+    return `
+      @keyframes ${animation.type} {
+        ${keyframes}
+      }
+    `;
+  }
+
+  // Merges different animations and applies variables
   static #animationBuilder(animations: CompiledAnimation[]) {
+    // TODO optimize this loop hell
     const name = animations.map((an) => an.type).join(",");
     const duration = animations.map((an) => an.duration).join(",");
     const iteration = animations.map((an) => an.iteration).join(",");
@@ -193,52 +274,7 @@ export class FunText {
     ].join("\n");
   }
 
-  static #keyframeBuilder(animation: CompiledAnimation) {
-    const property = FunText.#animateProperty[animation.type];
-    let keyframes = "";
-    for (const key of numberKeys(animation.steps)) {
-      let properties = "";
-      let step = animation.steps[key];
-      if (typeof step === "string") {
-        step = [step];
-      }
-
-      for (const s of step) {
-        properties = `${properties}${property}:${s};`;
-      }
-      keyframes = `${keyframes} ${key}% { ${properties} }`;
-    }
-
-    return `
-      @keyframes ${animation.type} {
-        ${keyframes}
-      }
-    `;
-  }
-
-  #scope: Scope;
-  #container: HTMLElement;
-  #text: string;
-
-  #animations!: CompiledAnimation[];
-  #nodes!: HTMLElement[];
-  #style!: HTMLStyleElement;
-  #shadow!: ShadowRoot;
-
-  #compileAnimations(animations: Animation[]) {
-    this.#animations = [];
-    for (const animation of animations) {
-      this.#animations.push(FunText.#animationCompiler(animation));
-    }
-  }
-
-  #buildNodes() {
-    this.#nodes = FunText.#nodeBuilder(
-      FunText.#splitScope[this.#scope],
-      this.#text
-    );
-  }
-
+  // Creates and fills style for default layout and specified animations
   #buildStyle() {
     let keyframes = "";
     for (const animation of this.#animations) {
@@ -263,13 +299,18 @@ export class FunText {
     this.#style = document.createElement("style");
     this.#style.innerHTML = `
     .funtext {
-      ${FunText.#defaultCss}
+      ${FunText.#styleDefault}
       ${FunText.#animationBuilder(this.#animations)}
     }
     ${keyframes}
     `;
   }
 
+  /*
+    SHADOW
+  */
+
+  // Turn the given container into a shadow host
   #buildShadow(): void | never {
     const shadow = this.#container.shadowRoot;
     if (!shadow) {
@@ -288,12 +329,29 @@ export class FunText {
     this.#shadow.appendChild(document.createElement("slot"));
   }
 
+  /*
+    INIT  
+  */
+
+  #scope: Scope;
+  #container: HTMLElement;
+  #text: string;
+
+  #animations!: CompiledAnimation[];
+  #nodes!: HTMLElement[];
+  #style!: HTMLStyleElement;
+  #shadow!: ShadowRoot;
+
   constructor(options: Options, animations: Animation[]) {
     this.#scope = options.scope;
     this.#container = options.container;
     this.#text = options.text || this.#container.innerText;
     this.#compileAnimations(animations);
   }
+
+  /*
+    BUILD  
+  */
 
   build() {
     this.#buildNodes();
@@ -302,6 +360,10 @@ export class FunText {
 
     return this;
   }
+
+  /*
+    MOUNT  
+  */
 
   mount() {
     this.#shadow.innerHTML = "";
@@ -313,12 +375,20 @@ export class FunText {
     return this;
   }
 
+  /*
+    UNMOUNT  
+  */
+
   unmount() {
     this.#shadow.innerHTML = "";
     this.#shadow.appendChild(document.createElement("slot"));
 
     return this;
   }
+
+  /*
+    MANIPULATE ANIMATION WITH JS  
+  */
 
   pause() {} // TODO
 

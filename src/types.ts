@@ -1,3 +1,5 @@
+type timeUnit = number | `${number}s` | `${number}ms`;
+
 export type Scope = "all" | "sentence" | "word" | "letter"; // TODO custom
 export type Options = {
   text?: string;
@@ -15,7 +17,7 @@ export type AnimationType =
   | "rotation";
 export type Steps = { [key: number]: string | string[] };
 export type Sync = {
-  time: number; // TODO string
+  time: timeUnit; // TODO string
   to: "start" | "end"; // TODO middle, number
 };
 export type offsetCalculator = (
@@ -29,8 +31,8 @@ export type Animation = {
   type: AnimationType;
   steps: string | [string, string] | Steps;
 
-  duration?: number | `${number}s` | `${number}ms`;
-  delay?: number | `${number}s` | `${number}ms`;
+  duration?: timeUnit;
+  delay?: timeUnit;
   iteration?: number | string | "infinite";
   direction?: "normal" | "reverse" | "alternate" | "alternate-reverse";
   timing?:
@@ -44,7 +46,7 @@ export type Animation = {
   // TODO `custom:${string}`
   fill?: "none" | "forwards" | "backwards" | "both" | "initial" | "inherit";
 
-  offset?: number; // TODO
+  offset?: timeUnit; // TODO
   /*| ((
         curInd: number,
         maxInd: number,
