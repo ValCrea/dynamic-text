@@ -1,5 +1,5 @@
 import type { Options, Animation } from "types";
-export declare class FunText {
+export default class FunText {
     #private;
     constructor(options: Options, animations: Animation[]);
     build(): this;

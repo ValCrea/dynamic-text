@@ -3,6 +3,7 @@ import type {
   Steps,
   Scope,
   Options,
+  TimeUnit,
   Animation,
   CompiledAnimation,
   AnimationType,
@@ -58,19 +59,34 @@ export default class FunText {
     end: 100,
   };
 
-  static #typeCompressor(variable: any, def: string, sfix: string = "") {
+  static #typeDeterminator(variable: any, def: string) {
     return !variable
       ? def
       : typeof variable === "string"
       ? variable
-      : `${variable}${sfix}`;
+      : `${variable}`;
+  }
+
+  static #timeExtractor(variable: TimeUnit | undefined, def: number) {
+    variable = variable ?? def;
+
+    if (typeof variable === "number") {
+      return variable;
+    }
+
+    const timeUnit = variable.replace(/[0-9]/g, "");
+    const timeConversion = FunText.#animationTimeConvert[timeUnit] ?? 1;
+    let timeValue = parseFloat(variable.replace(/\W/g, ""));
+    timeValue = isNaN(timeValue) ? def : timeValue;
+
+    return timeValue * timeConversion;
   }
 
   // Converts input animation into a more program firendly format
   static #animationCompiler(animation: Animation): CompiledAnimation {
     const type = animation.type;
 
-    const steps: Steps = {};
+    let steps: Steps = {};
     if (typeof animation.steps === "string") {
       steps[0] = ["inherit", "0"];
       steps[100] = animation.steps;
@@ -83,61 +99,52 @@ export default class FunText {
       }
     }
 
-    const duration = FunText.#typeCompressor(animation.duration, "1s", "s");
-    const delay = FunText.#typeCompressor(animation.delay, "0s", "s");
-    const iteration = FunText.#typeCompressor(animation.iteration, "1");
-
+    const iteration = FunText.#typeDeterminator(animation.iteration, "1");
     const direction = animation.direction || "normal";
     const timing = animation.timing || "ease-in-out";
     const fill = animation.fill || "none";
-    const offset = animation.offset || 0;
 
-    const compiled = {
+    let duration = FunText.#timeExtractor(animation.duration, 1);
+    const delay = FunText.#timeExtractor(animation.delay, 0);
+    const offset = FunText.#timeExtractor(animation.offset, 0);
+
+    // TODO: clean code
+    if (animation.sync) {
+      const time = FunText.#timeExtractor(animation.sync.time, 1);
+
+      const ratio = duration / time;
+      const move = FunText.#animationSyncTo[animation.sync.to] * (1 - ratio);
+
+      const syncedSteps: Steps = {};
+      for (const key of numberKeys(steps)) {
+        syncedSteps[key * ratio + move] = steps[key];
+      }
+
+      // TODO check if redundant
+      /*if (!syncedSteps[0]) {
+        syncedSteps[0] = ["inherit", "0"];
+      }*/
+
+      if (!syncedSteps[100]) {
+        const lastStep = Math.max(...Array.from(numberKeys(syncedSteps)));
+        syncedSteps[100] = syncedSteps[lastStep];
+      }
+
+      steps = syncedSteps;
+      duration = time;
+    }
+
+    return {
       type,
       steps,
-      duration,
-      delay,
+      duration: `${duration}s`,
+      delay: `${delay}s`,
       iteration,
       direction,
       timing,
       fill,
       offset,
     };
-
-    // TODO: clean code
-    if (animation.sync) {
-      const durationUnit = duration.replace(/[0-9]/g, "");
-      let durationValue = parseFloat(duration.replace(/\W/g, ""));
-      durationValue = isNaN(durationValue) ? 0 : durationValue;
-
-      durationValue *=
-        FunText.#animationTimeConvert[durationUnit.toLowerCase()] || 1;
-
-      const ratio = durationValue / animation.sync.time;
-      const move = FunText.#animationSyncTo[animation.sync.to] * (1 - ratio);
-
-      const syncedSteps: Steps = {};
-      for (const key of numberKeys(compiled.steps)) {
-        syncedSteps[key * ratio + move] = compiled.steps[key];
-      }
-
-      if (!syncedSteps[0]) {
-        syncedSteps[0] = ["inherit", "0"];
-      }
-      if (!syncedSteps[100]) {
-        syncedSteps[100] =
-          syncedSteps[
-            parseFloat(
-              Object.keys(syncedSteps)[Object.keys(syncedSteps).length - 1]
-            )
-          ];
-      }
-
-      compiled.steps = syncedSteps;
-      compiled.duration = `${animation.sync.time}s`;
-    }
-
-    return compiled;
   }
 
   // Converts and sets all input animations

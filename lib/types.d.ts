@@ -4,25 +4,26 @@ export declare type Options = {
     scope: Scope;
     container: HTMLElement;
 };
+export declare type TimeUnit = number | `${number}s` | `${number}ms`;
 export declare type AnimationType = "horizontal" | "vertical" | "color" | "background" | "opacity" | "scale" | "rotation";
 export declare type Steps = {
     [key: number]: string | string[];
 };
 export declare type Sync = {
-    time: number;
+    time: TimeUnit;
     to: "start" | "end";
 };
 export declare type offsetCalculator = (curInd: number, maxInd: number, curLen: number, maxLen: number) => number;
 export declare type Animation = {
     type: AnimationType;
     steps: string | [string, string] | Steps;
-    duration?: number | `${number}s` | `${number}ms`;
-    delay?: number | `${number}s` | `${number}ms`;
+    duration?: TimeUnit;
+    delay?: TimeUnit;
     iteration?: number | string | "infinite";
     direction?: "normal" | "reverse" | "alternate" | "alternate-reverse";
     timing?: "ease" | "ease-in" | "ease-out" | "ease-in-out" | "linear" | "step-start" | "step-end";
     fill?: "none" | "forwards" | "backwards" | "both" | "initial" | "inherit";
-    offset?: number;
+    offset?: TimeUnit;
     sync?: Sync;
 };
 export declare type CompiledAnimation = {
