@@ -32,9 +32,10 @@
       };
       const animations = [
         {
-          type: "rotation",
-          steps: "180deg",
+          type: "background",
+          steps: "firebrick",
           iteration: "infinite",
+          direction: "alternate",
           duration: 2,
           offset: 0.2,
           sync: {
@@ -54,8 +55,6 @@
         funtext.unmount();
         event.preventDefault();
       });
-
-      console.log("1.2lalal".replace(/[^0-9.]/gi, ""));
     </script>
 
     <style>
@@ -64,28 +63,8 @@
         padding: 5rem;
         /*box-sizing: border-box;*/
       }
-
-      @keyframes test {
-        0% {
-        }
-
-        25% {
-          background-color: inherit;
-        }
-
-        50% {
-          left: 0;
-        }
-
-        75% {
-          color: inherit;
-        }
-
-        100% {
-          color: cornflowerblue;
-          left: 20rem;
-          background-color: firebrick;
-        }
+      #container {
+        background-color: cornflowerblue;
       }
     </style>
   </body>

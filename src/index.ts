@@ -1,12 +1,17 @@
 import type {
   Sync,
+  Steps,
   Scope,
   Options,
   Animation,
   CompiledAnimation,
   AnimationType,
 } from "types";
-import { moveSyntheticComments } from "typescript";
+
+function* numberKeys(object: { [key: number]: any }) {
+  const keys = Object.keys(object);
+  for (const k of keys) yield parseFloat(k);
+}
 
 export class FunText {
   static #splitScope: { [key in Scope]: string | null } = {
@@ -36,16 +41,6 @@ export class FunText {
     white-space:pre;
     background-size: 100px;
   `;
-
-  /*static #defaultVariables = `
-    :host {
-      --offset-horizontal: 0;
-      --offset-vertical: 0;
-      --offset-color: 0;
-      --offset-background: 0;
-      --offset-opacity: 0;
-    }
-  `;*/
 
   static #timeUnitConversion: { [key: string]: number } = {
     ms: 0.001,
@@ -106,17 +101,16 @@ export class FunText {
   static #animationCompiler(animation: Animation): CompiledAnimation {
     const type = animation.type;
 
-    const steps: { [key: number]: string } = {};
+    const steps: Steps = {};
     if (typeof animation.steps === "string") {
-      steps[0] = "inherit";
+      steps[0] = ["inherit", "0"];
       steps[100] = animation.steps;
     } else if (animation.steps instanceof Array) {
       steps[0] = animation.steps[0];
       steps[100] = animation.steps[1];
     } else {
-      for (const key of Object.keys(animation.steps)) {
-        const numKey = parseFloat(key);
-        steps[numKey] = animation.steps[numKey];
+      for (const key of numberKeys(animation.steps)) {
+        steps[key] = animation.steps[key];
       }
     }
 
@@ -152,14 +146,13 @@ export class FunText {
       const ratio = durationValue / animation.sync.time;
       const move = FunText.#animationSyncBegin[animation.sync.to] * (1 - ratio);
 
-      const syncedSteps: { [key: number]: string } = {};
-      for (const key of Object.keys(compiled.steps)) {
-        const numKey = parseFloat(key);
-        syncedSteps[numKey * ratio + move] = compiled.steps[numKey];
+      const syncedSteps: Steps = {};
+      for (const key of numberKeys(compiled.steps)) {
+        syncedSteps[key * ratio + move] = compiled.steps[key];
       }
 
       if (!syncedSteps[0]) {
-        syncedSteps[0] = "inherit";
+        syncedSteps[0] = ["inherit", "0"];
       }
       if (!syncedSteps[100]) {
         syncedSteps[100] =
@@ -203,8 +196,17 @@ export class FunText {
   static #keyframeBuilder(animation: CompiledAnimation) {
     const property = FunText.#animateProperty[animation.type];
     let keyframes = "";
-    for (const key of Object.keys(animation.steps)) {
-      keyframes = `${keyframes} ${key}% { ${property}:${animation.steps[key]}; }`;
+    for (const key of numberKeys(animation.steps)) {
+      let properties = "";
+      let step = animation.steps[key];
+      if (typeof step === "string") {
+        step = [step];
+      }
+
+      for (const s of step) {
+        properties = `${properties}${property}:${s};`;
+      }
+      keyframes = `${keyframes} ${key}% { ${properties} }`;
     }
 
     return `
