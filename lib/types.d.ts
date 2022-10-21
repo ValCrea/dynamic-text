@@ -13,7 +13,7 @@ export declare type Sync = {
     time: TimeUnit;
     to: "start" | "end";
 };
-export declare type offsetCalculator = (curInd: number, maxInd: number, curLen: number, maxLen: number) => number;
+export declare type OffsetCalculator = (curInd: number, maxInd: number, curLen: number, maxLen: number) => number;
 export declare type Animation = {
     type: AnimationType;
     steps: string | [string, string] | Steps;
@@ -23,7 +23,7 @@ export declare type Animation = {
     direction?: "normal" | "reverse" | "alternate" | "alternate-reverse";
     timing?: "ease" | "ease-in" | "ease-out" | "ease-in-out" | "linear" | "step-start" | "step-end";
     fill?: "none" | "forwards" | "backwards" | "both" | "initial" | "inherit";
-    offset?: TimeUnit;
+    offset?: TimeUnit | OffsetCalculator;
     sync?: Sync;
 };
 export declare type CompiledAnimation = {
@@ -35,5 +35,5 @@ export declare type CompiledAnimation = {
     direction: string;
     timing: string;
     fill: string;
-    offset: number;
+    offset: number | OffsetCalculator;
 };

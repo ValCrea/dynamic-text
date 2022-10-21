@@ -27,20 +27,20 @@
     <script defer>
       const options = {
         text: "This text is very fun!",
-        scope: "all",
+        scope: "word",
         container: null,
       };
       const animations = [
         {
-          type: "background",
-          steps: "firebrick",
+          type: "vertical",
+          steps: "5rem",
           iteration: "infinite",
           direction: "alternate",
-          duration: 2,
-          offset: 0.2,
+          duration: 1,
+          offset: (ci, mi, cl, ml) => cl * 0.15,
           sync: {
             time: 4,
-            to: "start",
+            to: "end",
           },
         },
       ];

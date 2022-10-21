@@ -19,7 +19,7 @@ export type Sync = {
   time: TimeUnit; // TODO string
   to: "start" | "end"; // TODO middle, number
 };
-export type offsetCalculator = (
+export type OffsetCalculator = (
   curInd: number,
   maxInd: number,
   curLen: number,
@@ -45,13 +45,7 @@ export type Animation = {
   // TODO `custom:${string}`
   fill?: "none" | "forwards" | "backwards" | "both" | "initial" | "inherit";
 
-  offset?: TimeUnit; // TODO
-  /*| ((
-        curInd: number,
-        maxInd: number,
-        curLen: number,
-        maxLen: number
-      ) => number);*/
+  offset?: TimeUnit | OffsetCalculator;
   sync?: Sync; // TODO more stuff
 };
 export type CompiledAnimation = {
@@ -63,5 +57,5 @@ export type CompiledAnimation = {
   direction: string;
   timing: string;
   fill: string;
-  offset: number;
+  offset: number | OffsetCalculator;
 };

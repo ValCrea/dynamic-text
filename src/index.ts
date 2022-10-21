@@ -5,8 +5,9 @@ import type {
   Options,
   TimeUnit,
   Animation,
-  CompiledAnimation,
   AnimationType,
+  OffsetCalculator,
+  CompiledAnimation,
 } from "types";
 
 /*
@@ -59,6 +60,7 @@ export default class FunText {
     end: 100,
   };
 
+  // Converts unidentified type to string with default fallback
   static #typeDeterminator(variable: any, def: string) {
     return !variable
       ? def
@@ -67,6 +69,7 @@ export default class FunText {
       : `${variable}`;
   }
 
+  // Gets the time value in seconds as a number from TimeUnit type
   static #timeExtractor(variable: TimeUnit | undefined, def: number) {
     variable = variable ?? def;
 
@@ -106,7 +109,13 @@ export default class FunText {
 
     let duration = FunText.#timeExtractor(animation.duration, 1);
     const delay = FunText.#timeExtractor(animation.delay, 0);
-    const offset = FunText.#timeExtractor(animation.offset, 0);
+
+    let offset: number | OffsetCalculator;
+    if (typeof animation.offset === "function") {
+      offset = animation.offset;
+    } else {
+      offset = FunText.#timeExtractor(animation.offset, 0);
+    }
 
     // TODO: clean code
     if (animation.sync) {
@@ -256,6 +265,20 @@ export default class FunText {
     `;
   }
 
+  //
+  static #offsetCalculatorDefault(offset: number): OffsetCalculator {
+    const offsetCalculator: OffsetCalculator = (
+      curInd: number,
+      maxInd: number,
+      curLen: number,
+      maxLen: number
+    ) => {
+      return curInd * offset;
+    };
+
+    return offsetCalculator;
+  }
+
   // Merges different animations and applies variables
   static #animationBuilder(animations: CompiledAnimation[]) {
     // TODO optimize this loop hell
@@ -281,26 +304,37 @@ export default class FunText {
     ].join("\n");
   }
 
+  // Calculates animation offset for all nodes of the given animation
+  #animationCalculateOffset(animation: CompiledAnimation) {
+    let curNode = null;
+    const animationName = `--offset-${animation.type}`;
+
+    let offsetCalculator;
+    if (typeof animation.offset === "number") {
+      offsetCalculator = FunText.#offsetCalculatorDefault(animation.offset);
+    } else {
+      offsetCalculator = animation.offset;
+    }
+
+    let curLen = 0;
+    const maxLen = this.#text.length;
+    const maxInd = this.#nodes.length;
+    for (let curInd = 0; curInd < maxInd; curInd++) {
+      curNode = this.#nodes[curInd];
+      curNode.style.setProperty(
+        animationName,
+        `${offsetCalculator(curInd, maxInd, curLen, maxLen)}s`
+      );
+      curLen += curNode.innerText.length;
+    }
+  }
+
   // Creates and fills style for default layout and specified animations
   #buildStyle() {
     let keyframes = "";
     for (const animation of this.#animations) {
       keyframes = `${keyframes}${FunText.#keyframeBuilder(animation)}`;
-
-      let curNode = null;
-      const animationName = `--offset-${animation.type}`;
-
-      let curLen = 0;
-      const maxLen = this.#text.length;
-      const maxInd = this.#nodes.length;
-      for (let curInd = 0; curInd < maxInd; curInd++) {
-        curNode = this.#nodes[curInd];
-        curNode.style.setProperty(
-          animationName,
-          `${curInd * animation.offset}s`
-        );
-        curLen += curNode.innerText.length;
-      }
+      this.#animationCalculateOffset(animation);
     }
 
     this.#style = document.createElement("style");
