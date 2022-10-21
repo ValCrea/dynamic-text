@@ -30,6 +30,8 @@
     </div>
 
     <div id="zoom">Zooooooom</div>
+
+    <div id="options">Testing options change</div>
     <!--<pre>
   __────__
  /  o     \
@@ -197,6 +199,38 @@
       )
         .build()
         .mount();
+
+      const optionsTest = new FunText(
+        {
+          text: null,
+          scope: "word",
+          container: document.getElementById("options"),
+        },
+        [
+          {
+            type: "vertical",
+            steps: "1rem",
+            duration: 2,
+            iteration: "infinite",
+            timing: "linear",
+            offset: 0.05,
+          },
+        ]
+      )
+        .build()
+        .mount();
+
+      window.addEventListener(
+        "click",
+        () => {
+          optionsTest.options = {
+            text: null,
+            scope: "letter",
+            container: document.getElementById("options"),
+          };
+        },
+        { once: true }
+      );
     </script>
 
     <style>

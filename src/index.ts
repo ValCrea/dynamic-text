@@ -45,6 +45,17 @@ export default class FunText {
   }
 
   /*
+    INPUT OPTIONS
+  */
+
+  // Sorts input options in class variables
+  #parseOptions(options: Options) {
+    this.#scope = options.scope;
+    this.#container = options.container;
+    this.#text = options.text ?? this.#container.innerHTML;
+  }
+
+  /*
     INPUT ANIMATION
   */
 
@@ -118,7 +129,6 @@ export default class FunText {
       offset = FunText.#timeExtractor(animation.offset, 0);
     }
 
-    // TODO: clean code
     if (animation.sync) {
       const time = FunText.#timeExtractor(animation.sync.time, 1);
 
@@ -380,9 +390,9 @@ export default class FunText {
     INIT  
   */
 
-  #scope: Scope;
-  #container: HTMLElement;
-  #text: string;
+  #scope!: Scope;
+  #container!: HTMLElement;
+  #text!: string;
 
   #animations!: CompiledAnimation[];
   #nodes!: HTMLElement[];
@@ -399,14 +409,17 @@ export default class FunText {
     return this.#isMounted;
   }
 
-  constructor(options: Options, animations: Animation[]) {
-    this.#scope = options.scope;
-    this.#container = options.container;
-    this.#text = options.text ?? this.#container.innerText;
-    this.#compileAnimations(animations);
+  // TODO
+  /*#isDetached: boolean;
+  get isMisDetachedunted() {
+    return this.#isDetached;
+  }*/
 
+  constructor(options: Options, animations: Animation[]) {
     this.#isBuild = false;
     this.#isMounted = false;
+    this.#parseOptions(options);
+    this.#compileAnimations(animations);
   }
 
   /*
@@ -427,18 +440,49 @@ export default class FunText {
     REFACTOR
   */
 
-  set text(text: string | null | undefined) {
-    this.#text = text ?? this.#container.innerText;
-    if (this.#isBuild) {
-      const wasMounted = this.#isMounted;
-      if (wasMounted) {
-        this.unmount();
-      }
-      this.#buildNodes();
-      if (wasMounted) {
-        this.mount();
-      }
+  // Runs given commands while taking state into account
+  #refactor(commands: { (...args: unknown[]): unknown }[]) {
+    const wasMounted = this.#isMounted;
+    if (wasMounted) {
+      this.unmount();
     }
+
+    for (const command of commands) {
+      command();
+    }
+
+    if (wasMounted) {
+      this.mount();
+    }
+  }
+
+  set text(text: string | null | undefined) {
+    this.#text = text ?? this.#container.innerHTML;
+    if (!this.#isBuild) {
+      return;
+    }
+    this.#refactor([this.#buildNodes.bind(this)]);
+  }
+
+  set options(options: Options) {
+    const isNewContainer = options.container !== this.#container;
+
+    if (isNewContainer && this.#isMounted) {
+      FunText.#error("Cannot switch containers while mounted");
+    }
+
+    this.#parseOptions(options);
+    if (!this.#isBuild) {
+      return;
+    }
+
+    let commands: { (...args: unknown[]): unknown }[] = [];
+    if (isNewContainer) {
+      commands = [this.#buildShadow.bind(this), this.#buildNodes.bind(this)];
+    } else {
+      commands = [this.#buildNodes.bind(this)];
+    }
+    this.#refactor(commands);
   }
 
   /*
@@ -485,6 +529,12 @@ export default class FunText {
 
     return this;
   }
+
+  /*
+    UNMOUNT  
+  */
+
+  detach() {} // TODO
 
   /*
     MANIPULATE ANIMATION 

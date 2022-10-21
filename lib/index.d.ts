@@ -6,8 +6,10 @@ export default class FunText {
     constructor(options: Options, animations: Animation[]);
     build(): this;
     set text(text: string | null | undefined);
+    set options(options: Options);
     mount(): this;
     unmount(): this;
+    detach(): void;
     pause(): void;
     unpause(): void;
     toggle(): void;
