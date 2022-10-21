@@ -57,6 +57,7 @@ export default class FunText {
   // Sync keyword to percentage
   static #animationSyncTo: { [key in Sync["to"]]: number } = {
     start: 0,
+    middle: 50,
     end: 100,
   };
 
@@ -79,7 +80,7 @@ export default class FunText {
 
     const timeUnit = variable.replace(/[0-9]/g, "");
     const timeConversion = FunText.#animationTimeConvert[timeUnit] ?? 1;
-    let timeValue = parseFloat(variable.replace(/\W/g, ""));
+    let timeValue = parseFloat(variable.replace(/[^0-9 | . | -]/g, ""));
     timeValue = isNaN(timeValue) ? def : timeValue;
 
     return timeValue * timeConversion;
@@ -122,7 +123,9 @@ export default class FunText {
       const time = FunText.#timeExtractor(animation.sync.time, 1);
 
       const ratio = duration / time;
-      const move = FunText.#animationSyncTo[animation.sync.to] * (1 - ratio);
+      const move =
+        (FunText.#animationSyncTo[animation.sync.to] ?? animation.sync.to) *
+        (1 - ratio);
 
       const syncedSteps: Steps = {};
       for (const key of numberKeys(steps)) {
@@ -130,9 +133,9 @@ export default class FunText {
       }
 
       // TODO check if redundant
-      /*if (!syncedSteps[0]) {
+      if (!syncedSteps[0]) {
         syncedSteps[0] = ["inherit", "0"];
-      }*/
+      }
 
       if (!syncedSteps[100]) {
         const lastStep = Math.max(...Array.from(numberKeys(syncedSteps)));
@@ -206,12 +209,55 @@ export default class FunText {
     return nodes;
   }
 
-  // Builds and sets nodes
+  // Creates the default offset calcualtor
+  static #offsetCalculatorDefault(offset: number): OffsetCalculator {
+    const offsetCalculator: OffsetCalculator = (
+      curInd: number,
+      maxInd: number,
+      curLen: number,
+      maxLen: number
+    ) => {
+      return curInd * offset;
+    };
+
+    return offsetCalculator;
+  }
+
+  // Calculates animation offset for all nodes of the given animation
+  #calculateNodeVariables(animation: CompiledAnimation) {
+    let curNode = null;
+    const animationName = `--offset-${animation.type}`;
+
+    let offsetCalculator;
+    if (typeof animation.offset === "number") {
+      offsetCalculator = FunText.#offsetCalculatorDefault(animation.offset);
+    } else {
+      offsetCalculator = animation.offset;
+    }
+
+    let curLen = 0;
+    const maxLen = this.#text.length;
+    const maxInd = this.#nodes.length;
+    for (let curInd = 0; curInd < maxInd; curInd++) {
+      curNode = this.#nodes[curInd];
+      curNode.style.setProperty(
+        animationName,
+        `${offsetCalculator(curInd, maxInd, curLen, maxLen)}s`
+      );
+      curLen += curNode.innerText.length;
+    }
+  }
+
+  // Builds and sets nodes and their variables
   #buildNodes() {
     this.#nodes = FunText.#nodeBuilder(
       FunText.#scopeSplit[this.#scope],
       this.#text
     );
+
+    for (const animation of this.#animations) {
+      this.#calculateNodeVariables(animation);
+    }
   }
 
   /*
@@ -265,20 +311,6 @@ export default class FunText {
     `;
   }
 
-  //
-  static #offsetCalculatorDefault(offset: number): OffsetCalculator {
-    const offsetCalculator: OffsetCalculator = (
-      curInd: number,
-      maxInd: number,
-      curLen: number,
-      maxLen: number
-    ) => {
-      return curInd * offset;
-    };
-
-    return offsetCalculator;
-  }
-
   // Merges different animations and applies variables
   static #animationBuilder(animations: CompiledAnimation[]) {
     // TODO optimize this loop hell
@@ -304,37 +336,11 @@ export default class FunText {
     ].join("\n");
   }
 
-  // Calculates animation offset for all nodes of the given animation
-  #animationCalculateOffset(animation: CompiledAnimation) {
-    let curNode = null;
-    const animationName = `--offset-${animation.type}`;
-
-    let offsetCalculator;
-    if (typeof animation.offset === "number") {
-      offsetCalculator = FunText.#offsetCalculatorDefault(animation.offset);
-    } else {
-      offsetCalculator = animation.offset;
-    }
-
-    let curLen = 0;
-    const maxLen = this.#text.length;
-    const maxInd = this.#nodes.length;
-    for (let curInd = 0; curInd < maxInd; curInd++) {
-      curNode = this.#nodes[curInd];
-      curNode.style.setProperty(
-        animationName,
-        `${offsetCalculator(curInd, maxInd, curLen, maxLen)}s`
-      );
-      curLen += curNode.innerText.length;
-    }
-  }
-
   // Creates and fills style for default layout and specified animations
   #buildStyle() {
     let keyframes = "";
     for (const animation of this.#animations) {
       keyframes = `${keyframes}${FunText.#keyframeBuilder(animation)}`;
-      this.#animationCalculateOffset(animation);
     }
 
     this.#style = document.createElement("style");
@@ -383,11 +389,24 @@ export default class FunText {
   #style!: HTMLStyleElement;
   #shadow!: ShadowRoot;
 
+  #isBuild: boolean;
+  get isBuild() {
+    return this.#isBuild;
+  }
+
+  #isMounted: boolean;
+  get isMounted() {
+    return this.#isMounted;
+  }
+
   constructor(options: Options, animations: Animation[]) {
     this.#scope = options.scope;
     this.#container = options.container;
-    this.#text = options.text || this.#container.innerText;
+    this.#text = options.text ?? this.#container.innerText;
     this.#compileAnimations(animations);
+
+    this.#isBuild = false;
+    this.#isMounted = false;
   }
 
   /*
@@ -395,6 +414,8 @@ export default class FunText {
   */
 
   build() {
+    this.#isBuild = true;
+
     this.#buildNodes();
     this.#buildStyle();
     this.#buildShadow();
@@ -403,10 +424,38 @@ export default class FunText {
   }
 
   /*
+    REFACTOR
+  */
+
+  set text(text: string | null | undefined) {
+    this.#text = text ?? this.#container.innerText;
+    if (this.#isBuild) {
+      const wasMounted = this.#isMounted;
+      if (wasMounted) {
+        this.unmount();
+      }
+      this.#buildNodes();
+      if (wasMounted) {
+        this.mount();
+      }
+    }
+  }
+
+  /*
     MOUNT  
   */
 
   mount() {
+    if (!this.#isBuild) {
+      FunText.#error("Object bust be build before mounting");
+    }
+
+    if (this.#isMounted) {
+      FunText.#warning("Object laready mounted");
+      return this;
+    }
+    this.#isMounted = true;
+
     this.#shadow.innerHTML = "";
     for (const node of this.#nodes) {
       this.#shadow.appendChild(node);
@@ -421,6 +470,16 @@ export default class FunText {
   */
 
   unmount() {
+    if (!this.#isBuild) {
+      FunText.#error("Object must be build before unmounting");
+    }
+
+    if (!this.#isMounted) {
+      FunText.#warning("Object laready unmounted");
+      return this;
+    }
+    this.#isMounted = false;
+
     this.#shadow.innerHTML = "";
     this.#shadow.appendChild(document.createElement("slot"));
 
@@ -428,7 +487,7 @@ export default class FunText {
   }
 
   /*
-    MANIPULATE ANIMATION WITH JS  
+    MANIPULATE ANIMATION 
   */
 
   pause() {} // TODO

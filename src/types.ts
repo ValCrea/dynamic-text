@@ -1,6 +1,6 @@
 export type Scope = "all" | "sentence" | "word" | "letter"; // TODO custom
 export type Options = {
-  text?: string;
+  text?: string | null;
   scope: Scope;
   container: HTMLElement;
 };
@@ -17,7 +17,7 @@ export type AnimationType =
 export type Steps = { [key: number]: string | string[] };
 export type Sync = {
   time: TimeUnit; // TODO string
-  to: "start" | "end"; // TODO middle, number
+  to: number | "start" | "middle" | "end"; // TODO middle, number
 };
 export type OffsetCalculator = (
   curInd: number,

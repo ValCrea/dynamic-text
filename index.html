@@ -14,47 +14,189 @@
   </head>
   <body>
     <h1>Fun Text</h1>
-    <div id="container"><h2>Hello worlds</h2></div>
-    <pre>
+    <div>
+      Loading
+      <div id="loading">...</div>
+    </div>
+
+    <div id="squigle">
+      ---------------------------------------------------------------------------------
+    </div>
+
+    <div id="rainbow">raaaaaiiiiinboooooooow</div>
+
+    <div id="rainbow-squigle">
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    </div>
+
+    <div id="zoom">Zooooooom</div>
+    <!--<pre>
   __────__
  /  o     \
 |       O  |
 |          |
  \    o   /
   ‾‾────‾‾
-    </pre>
+    </pre>-->
 
     <script defer>
-      const options = {
-        text: "This text is very fun!",
-        scope: "word",
-        container: null,
-      };
-      const animations = [
+      new FunText(
         {
-          type: "vertical",
-          steps: "5rem",
-          iteration: "infinite",
-          direction: "alternate",
-          duration: 1,
-          offset: (ci, mi, cl, ml) => cl * 0.15,
-          sync: {
-            time: 4,
-            to: "end",
-          },
+          text: null,
+          scope: "letter",
+          container: document.getElementById("loading"),
         },
-      ];
+        [
+          {
+            type: "vertical",
+            steps: "-0.25rem",
+            //delay: -0.4,
+            duration: 0.4,
+            direction: "alternate",
+            iteration: "infinite",
+            timing: "ease-in-out",
+            offset: 0.1,
+          },
+        ]
+      )
+        .build()
+        .mount();
 
-      options.container = document.getElementById("container");
-      const funtext = new FunText(options, animations).build().mount();
+      new FunText(
+        {
+          text: null,
+          scope: "letter",
+          container: document.getElementById("squigle"),
+        },
+        [
+          {
+            type: "vertical",
+            steps: "7rem",
+            duration: 2,
+            direction: "alternate",
+            iteration: "infinite",
+            timing: "ease-in-out",
+            offset: 0.1,
+          },
+          {
+            type: "horizontal",
+            steps: "7rem",
+            duration: 2,
+            direction: "alternate",
+            iteration: "infinite",
+            timing: "ease-in-out",
+            offset: 0.1,
+          },
+        ]
+      )
+        .build()
+        .mount();
 
-      /*window.addEventListener("click", (event) => {
-        funtext.mount();
-      });
-      window.addEventListener("contextmenu", (event) => {
-        funtext.unmount();
-        event.preventDefault();
-      });*/
+      new FunText(
+        {
+          text: null,
+          scope: "letter",
+          container: document.getElementById("rainbow"),
+        },
+        [
+          {
+            type: "color",
+            steps: {
+              14: "red",
+              28: "orange",
+              42: "yellow",
+              56: "green",
+              70: "blue",
+              84: "indigo",
+              100: "violet",
+            },
+            //delay: -5,
+            duration: 3,
+            direction: "alternate",
+            iteration: "infinite",
+            timing: "ease-in-out",
+            offset: 0.2,
+          },
+        ]
+      )
+        .build()
+        .mount();
+
+      new FunText(
+        {
+          text: null,
+          scope: "letter",
+          container: document.getElementById("rainbow-squigle"),
+        },
+        [
+          {
+            type: "color",
+            steps: {
+              20: "aqua",
+              40: "cornflowerblue",
+              60: "blue",
+              80: "darkblue",
+              100: "MidnightBlue",
+            },
+            duration: 2,
+            direction: "alternate",
+            iteration: "infinite",
+            timing: "ease-in-out",
+            offset: 0.2,
+            sync: {
+              time: 4,
+              to: "start",
+            },
+          },
+          {
+            type: "vertical",
+            steps: ["0rem", "5rem"],
+            duration: 2,
+            direction: "alternate",
+            iteration: "infinite",
+            timing: "ease-in-out",
+            offset: 0.2,
+            sync: {
+              time: 4,
+              to: "start",
+            },
+          },
+        ]
+      )
+        .build()
+        .mount();
+
+      new FunText(
+        {
+          text: null,
+          scope: "letter",
+          container: document.getElementById("zoom"),
+        },
+        [
+          {
+            type: "horizontal",
+            steps: "20rem",
+            duration: 4,
+            iteration: "infinite",
+            timing: "ease-in-out",
+            offset: -0.1,
+          },
+          {
+            type: "opacity",
+            steps: { 0: "0", 50: "1", 100: "0" },
+            duration: 2,
+            iteration: "infinite",
+            timing: "ease-in-out",
+            offset: -0.05,
+            sync: {
+              time: 4,
+              to: "middle",
+            },
+          },
+        ]
+      )
+        .build()
+        .mount();
     </script>
 
     <style>
@@ -63,8 +205,17 @@
         padding: 5rem;
         /*box-sizing: border-box;*/
       }
-      #container {
-        background-color: cornflowerblue;
+      #loading {
+        display: inline-block;
+        font-size: 1.25rem;
+      }
+      #rainbow {
+        color: red;
+        margin-top: 10rem;
+      }
+      #rainbow-squigle {
+        color: aqua;
+        margin-bottom: 5rem;
       }
     </style>
   </body>

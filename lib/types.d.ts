@@ -1,6 +1,6 @@
 export declare type Scope = "all" | "sentence" | "word" | "letter";
 export declare type Options = {
-    text?: string;
+    text?: string | null;
     scope: Scope;
     container: HTMLElement;
 };
@@ -11,7 +11,7 @@ export declare type Steps = {
 };
 export declare type Sync = {
     time: TimeUnit;
-    to: "start" | "end";
+    to: number | "start" | "middle" | "end";
 };
 export declare type OffsetCalculator = (curInd: number, maxInd: number, curLen: number, maxLen: number) => number;
 export declare type Animation = {
