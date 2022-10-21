@@ -1,15 +1,17 @@
-export type Scope = "all" | "sentence" | "word" | "letter"; // "custom"
+export type Scope = "all" | "sentence" | "word" | "letter"; // TODO custom
 
 export type AnimationType =
   | "horizontal"
   | "vertical"
   | "color"
   | "background"
-  | "opacity";
+  | "opacity"
+  | "scale"
+  | "rotation";
 
 export type Sync = {
-  time: number;
-  to: "start" | "end"; // TODO middle
+  time: number; // TODO string
+  to: "start" | "end"; // TODO middle, number
 };
 
 export type Options = {
@@ -34,7 +36,7 @@ export type Animation = {
     | "linear"
     | "step-start"
     | "step-end";
-  // `custom:${string}`
+  // TODO `custom:${string}`
   fill?: "none" | "forwards" | "backwards" | "both" | "initial" | "inherit";
 
   offset?: number; // TODO

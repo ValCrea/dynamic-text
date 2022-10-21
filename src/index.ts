@@ -1,10 +1,12 @@
 import type {
+  Sync,
   Scope,
   Options,
   Animation,
   CompiledAnimation,
   AnimationType,
 } from "types";
+import { moveSyntheticComments } from "typescript";
 
 export class FunText {
   static #splitScope: { [key in Scope]: string | null } = {
@@ -20,6 +22,8 @@ export class FunText {
     color: "color",
     background: "background-color",
     opacity: "opacity",
+    scale: "scale",
+    rotation: "rotate",
   };
 
   static #defaultCss = `
@@ -33,7 +37,7 @@ export class FunText {
     background-size: 100px;
   `;
 
-  static #defaultVariables = `
+  /*static #defaultVariables = `
     :host {
       --offset-horizontal: 0;
       --offset-vertical: 0;
@@ -41,7 +45,16 @@ export class FunText {
       --offset-background: 0;
       --offset-opacity: 0;
     }
-  `;
+  `;*/
+
+  static #timeUnitConversion: { [key: string]: number } = {
+    ms: 0.001,
+  };
+
+  static #animationSyncBegin: { [key in Sync["to"]]: number } = {
+    start: 0,
+    end: 100,
+  };
 
   /*#calculateOffset(currentCount, totalCount, currentLen, totalLen) {}
   #syncAnimations() {}*/
@@ -95,6 +108,7 @@ export class FunText {
 
     const steps: { [key: number]: string } = {};
     if (typeof animation.steps === "string") {
+      steps[0] = "inherit";
       steps[100] = animation.steps;
     } else if (animation.steps instanceof Array) {
       steps[0] = animation.steps[0];
@@ -113,10 +127,9 @@ export class FunText {
     const direction = animation.direction || "normal";
     const timing = animation.timing || "ease-in-out";
     const fill = animation.fill || "none";
-
     const offset = animation.offset || 0;
 
-    return {
+    const compiled = {
       type,
       steps,
       duration,
@@ -127,6 +140,41 @@ export class FunText {
       fill,
       offset,
     };
+
+    if (animation.sync) {
+      const durationUnit = duration.replace(/[0-9]/g, "");
+      let durationValue = parseFloat(duration.replace(/\W/g, ""));
+      durationValue = isNaN(durationValue) ? 0 : durationValue;
+
+      durationValue *=
+        FunText.#timeUnitConversion[durationUnit.toLowerCase()] || 1;
+
+      const ratio = durationValue / animation.sync.time;
+      const move = FunText.#animationSyncBegin[animation.sync.to] * (1 - ratio);
+
+      const syncedSteps: { [key: number]: string } = {};
+      for (const key of Object.keys(compiled.steps)) {
+        const numKey = parseFloat(key);
+        syncedSteps[numKey * ratio + move] = compiled.steps[numKey];
+      }
+
+      if (!syncedSteps[0]) {
+        syncedSteps[0] = "inherit";
+      }
+      if (!syncedSteps[100]) {
+        syncedSteps[100] =
+          syncedSteps[
+            parseFloat(
+              Object.keys(syncedSteps)[Object.keys(syncedSteps).length - 1]
+            )
+          ];
+      }
+
+      compiled.steps = syncedSteps;
+      compiled.duration = `${animation.sync.time}s`;
+    }
+
+    return compiled;
   }
 
   static #animationBuilder(animations: CompiledAnimation[]) {

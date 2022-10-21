@@ -26,104 +26,66 @@
 
     <script defer>
       const options = {
-        text: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Totam, repellat.\n Facere possimus perspiciatis minima nulla voluptatibus eos, quae cum ullam debitis reiciendis\n ipsa deserunt rem perferendis, a et, aliquid sed.",
+        text: "This text is very fun!",
         scope: "all",
         container: null,
       };
       const animations = [
         {
-          type: "color",
-          steps: ["red", "blue"],
+          type: "rotation",
+          steps: "180deg",
           iteration: "infinite",
           duration: 2,
-          direction: "alternate",
-          offset: 0.1,
-          delay: -6,
-        },
-        {
-          type: "background",
-          steps: ["blue", "red"],
-          iteration: "infinite",
-          duration: 2,
-          direction: "alternate",
-          offset: 0.1,
-          delay: -6,
-        },
-        {
-          type: "horizontal",
-          steps: ["1rem", "15rem"],
-          iteration: "infinite",
-          duration: 3,
-          direction: "alternate",
-          offset: 0.01,
-          delay: -6,
-        },
-        {
-          type: "vertical",
-          steps: { 0: "3rem", 50: "0rem", 100: "-3rem" },
-          iteration: "infinite",
-          duration: 3,
-          direction: "alternate",
-          offset: 0.02,
-          delay: -6,
+          offset: 0.2,
+          sync: {
+            time: 4,
+            to: "start",
+          },
         },
       ];
 
-      /*const texts = [];
-      const runs = 10000;
-      console.log("Iterations: " + runs);
-
-      console.time("Containers");
-      const containers = [];
-      for (let i = 0; i < runs; i++) {
-        containers.push(document.createElement("div"));
-      }
-      console.timeEnd("Containers");
-
-      console.time("Init");
-      for (const con of containers) {
-        options.container = con;
-        texts.push(new FunText(options, animations));
-      }
-      console.timeEnd("Init");
-
-      console.time("Build");
-      for (const text of texts) {
-        text.build();
-      }
-      console.timeEnd("Build");
-
-      console.time("Mount");
-      for (const text of texts) {
-        text.mount();
-      }
-      console.timeEnd("Mount");
-
-      console.time("Unmount");
-      for (const text of texts) {
-        text.unmount();
-      }
-      console.timeEnd("Unmount");*/
-
       options.container = document.getElementById("container");
+      const funtext = new FunText(options, animations).build().mount();
 
-      console.time("Init");
-      const funtext = new FunText(options, animations);
-      console.timeEnd("Init");
+      window.addEventListener("click", (event) => {
+        funtext.mount();
+      });
+      window.addEventListener("contextmenu", (event) => {
+        funtext.unmount();
+        event.preventDefault();
+      });
 
-      console.time("Build");
-      funtext.build();
-      console.timeEnd("Build");
-
-      console.time("Mount");
-      funtext.mount();
-      console.timeEnd("Mount");
+      console.log("1.2lalal".replace(/[^0-9.]/gi, ""));
     </script>
 
     <style>
       body {
         margin: 0;
         padding: 5rem;
+        /*box-sizing: border-box;*/
+      }
+
+      @keyframes test {
+        0% {
+        }
+
+        25% {
+          background-color: inherit;
+        }
+
+        50% {
+          left: 0;
+        }
+
+        75% {
+          color: inherit;
+        }
+
+        100% {
+          color: cornflowerblue;
+          left: 20rem;
+          background-color: firebrick;
+        }
       }
     </style>
   </body>

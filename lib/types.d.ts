@@ -1,5 +1,5 @@
 export declare type Scope = "all" | "sentence" | "word" | "letter";
-export declare type AnimationType = "horizontal" | "vertical" | "color" | "background" | "opacity";
+export declare type AnimationType = "horizontal" | "vertical" | "color" | "background" | "opacity" | "scale" | "rotation";
 export declare type Sync = {
     time: number;
     to: "start" | "end";
